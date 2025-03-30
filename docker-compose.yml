@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: tag-extractor-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    networks:
+      - tag-extractor-network
+
+  frontend:
+    build: ./frontend
+    container_name: tag-extractor-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - tag-extractor-network
+
+networks:
+  tag-extractor-network:
+    driver: bridge
