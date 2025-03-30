@@ -66,6 +66,36 @@ body {
     margin-top: 20px;
 }
 
+/* 用戶頭像樣式 */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-section {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+#usageInfo {
+    font-size: 16px;
+}
+
+#usageInfo .badge {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+/* Google登入按鈕樣式 */
+.g_id_signin {
+    margin-right: 10px;
+}
+
 @media (max-width: 768px) {
     .tag-item {
         font-size: 16px;
@@ -79,5 +109,14 @@ body {
     
     #copyTagsBtn {
         margin-top: 10px;
+    }
+    
+    .user-section .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    #userInfo, #loginSection, #usageInfo {
+        margin-bottom: 10px;
     }
 }

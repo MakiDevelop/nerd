@@ -7,11 +7,36 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Google Sign-In API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-10">
+                <!-- 用戶信息和登入按鈕 -->
+                <div class="user-section mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div id="userInfo" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <img id="userPicture" class="user-avatar me-2" src="" alt="用戶頭像">
+                                <span id="userName" class="me-2"></span>
+                                <button id="logoutBtn" class="btn btn-sm btn-outline-danger">登出</button>
+                            </div>
+                        </div>
+                        <div id="loginSection">
+                            <div id="g_id_onload"
+                                data-client_id="409546408192-0tnl76ogth01o5vg31a6s7v0bqebb89d.apps.googleusercontent.com"
+                                data-callback="handleCredentialResponse">
+                            </div>
+                            <div class="g_id_signin" data-type="standard"></div>
+                        </div>
+                        <div id="usageInfo" class="text-end">
+                            <span class="badge bg-info">今日已使用: <span id="usageCount">0</span>/<span id="usageLimit">3</span> 次</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
                         <h1 class="text-center mb-0">文本標籤萃取工具</h1>
@@ -43,6 +68,26 @@
                         </div>
                         <div id="resultContent"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用限制提示模態框 -->
+    <div class="modal fade" id="usageLimitModal" tabindex="-1" aria-labelledby="usageLimitModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="usageLimitModalLabel">使用次數已達上限</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>您今日的使用次數已達上限。</p>
+                    <p>想增加查詢次數或想進行API租用／客製化，請連絡 <a href="mailto:makiakatsu@gmail.com">makiakatsu@gmail.com</a></p>
+                    <p>登入Google帳號可以增加每日使用次數限制！</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
                 </div>
             </div>
         </div>

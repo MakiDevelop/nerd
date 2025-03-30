@@ -9,6 +9,11 @@ services:
     volumes:
       - ./backend:/app
     restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     networks:
       - tag-extractor-network
 
@@ -25,6 +30,20 @@ services:
     networks:
       - tag-extractor-network
 
+  redis:
+    image: redis:alpine
+    container_name: tag-extractor-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - tag-extractor-network
+
 networks:
   tag-extractor-network:
     driver: bridge
+
+volumes:
+  redis-data:

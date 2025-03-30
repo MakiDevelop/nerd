@@ -1,4 +1,17 @@
 $(document).ready(function() {
+    // 用戶令牌和信息
+    let userToken = localStorage.getItem('userToken');
+    let userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    
+    // 模態框實例
+    const usageLimitModal = new bootstrap.Modal(document.getElementById('usageLimitModal'));
+    
+    // 初始化頁面
+    initPage();
+    
+    // 獲取使用次數
+    fetchUsage();
+    
     // 表單提交事件
     $("#extractForm").on("submit", function(e) {
         e.preventDefault();
@@ -17,11 +30,22 @@ $(document).ready(function() {
         $("#loadingSpinner").show();
         $("#resultContent").empty();
         
+        // 準備請求頭
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // 如果用戶已登入，添加授權令牌
+        if (userToken) {
+            headers['Authorization'] = `Bearer ${userToken}`;
+        }
+        
         // 發送API請求
         $.ajax({
             url: "http://localhost:8000/api/extract-tags",
             type: "POST",
             contentType: "application/json",
+            headers: headers,
             data: JSON.stringify({
                 content: content
             }),
@@ -31,21 +55,95 @@ $(document).ready(function() {
                 
                 // 顯示結果
                 displayResults(response);
+                
+                // 更新使用次數
+                fetchUsage();
             },
             error: function(xhr, status, error) {
                 // 隱藏加載動畫
                 $("#loadingSpinner").hide();
                 
+                // 檢查是否超出使用限制
+                if (xhr.status === 429) {
+                    // 顯示使用限制提示模態框
+                    usageLimitModal.show();
+                    return;
+                }
+                
                 // 顯示錯誤信息
                 $("#resultContent").html(
                     `<div class="error-message">
                         <h4>發生錯誤</h4>
-                        <p>${xhr.responseText || "請求失敗，請稍後再試"}</p>
+                        <p>${xhr.responseJSON?.message || "請求失敗，請稍後再試"}</p>
                     </div>`
                 );
             }
         });
     });
+    
+    // 登出按鈕點擊事件
+    $("#logoutBtn").on("click", function() {
+        // 清除本地存儲的用戶信息
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userInfo');
+        
+        // 重置用戶變量
+        userToken = null;
+        userInfo = {};
+        
+        // 更新頁面
+        initPage();
+        
+        // 更新使用次數
+        fetchUsage();
+    });
+    
+    // 初始化頁面
+    function initPage() {
+        if (userToken && userInfo.name) {
+            // 顯示用戶信息
+            $("#userInfo").show();
+            $("#loginSection").hide();
+            $("#userName").text(userInfo.name);
+            $("#userPicture").attr("src", userInfo.picture || "");
+        } else {
+            // 顯示登入按鈕
+            $("#userInfo").hide();
+            $("#loginSection").show();
+        }
+    }
+    
+    // 獲取使用次數
+    function fetchUsage() {
+        // 準備請求頭
+        const headers = {};
+        
+        // 如果用戶已登入，添加授權令牌
+        if (userToken) {
+            headers['Authorization'] = `Bearer ${userToken}`;
+        }
+        
+        $.ajax({
+            url: "http://localhost:8000/api/usage",
+            type: "GET",
+            headers: headers,
+            success: function(response) {
+                // 更新使用次數顯示
+                $("#usageCount").text(response.usage);
+                $("#usageLimit").text(response.limit);
+                
+                // 如果已達到限制，禁用提交按鈕
+                if (response.remaining <= 0) {
+                    $("#extractButton").prop("disabled", true).text("今日使用次數已達上限");
+                } else {
+                    $("#extractButton").prop("disabled", false).text("萃取標籤");
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("獲取使用次數失敗:", error);
+            }
+        });
+    }
     
     // 顯示結果的函數 - 只顯示標籤名稱（key）
     function displayResults(data) {
@@ -132,3 +230,31 @@ $(document).ready(function() {
         }
     }
 });
+
+// Google登入回調函數（必須是全局函數）
+function handleCredentialResponse(response) {
+    // 獲取ID令牌
+    const token = response.credential;
+    
+    // 驗證令牌
+    $.ajax({
+        url: "http://localhost:8000/api/verify-google-token",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            token: token
+        }),
+        success: function(response) {
+            // 保存用戶令牌和信息
+            localStorage.setItem('userToken', token);
+            localStorage.setItem('userInfo', JSON.stringify(response));
+            
+            // 刷新頁面
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            console.error("Google登入失敗:", error);
+            alert("Google登入失敗，請稍後再試");
+        }
+    });
+}
