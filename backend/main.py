@@ -94,7 +94,19 @@ async def get_user_id(authorization: Optional[str] = Header(None), request: Requ
             return f"user:{token_info.get('sub')}"  # 使用Google用戶ID
     
     # 如果沒有有效的令牌，使用IP地址
-    client_ip = request.client.host
+    # 優先使用 X-Forwarded-For 或 X-Real-IP 頭部獲取真實客戶端 IP
+    client_ip = request.headers.get("X-Forwarded-For")
+    if client_ip:
+        # X-Forwarded-For 可能包含多個 IP，取第一個
+        client_ip = client_ip.split(",")[0].strip()
+    else:
+        client_ip = request.headers.get("X-Real-IP")
+        
+    # 如果沒有代理頭部，則使用直接連接的 IP
+    if not client_ip:
+        client_ip = request.client.host
+    
+    logger.info(f"客戶端 IP: {client_ip}")
     return f"anon:{client_ip}"
 
 # 檢查使用次數限制
@@ -162,6 +174,8 @@ async def get_usage(request: Request, user_id: str = Depends(get_user_id)):
     # 檢查是否已登入用戶
     is_logged_in = user_id.startswith("user:")
     limit = LOGGED_IN_LIMIT if is_logged_in else ANONYMOUS_LIMIT
+    
+    logger.info(f"用戶 {user_id} 的使用情況: {usage}/{limit}")
     
     return {
         "usage": usage,

@@ -1,11 +1,56 @@
+/* 基本布局 */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     background-color: #f8f9fa;
     font-family: 'Microsoft JhengHei', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* 視窗高度 */
+}
+
+/* 主要內容區域 */
+.main-content {
+    flex: 1 0 auto; /* 自動擴展以填充空間 */
+    padding-bottom: 30px; /* 為 footer 預留一些空間 */
+}
+
+/* 背景圖片設置 */
+body::before {
+    content: "";
+    background-image: url('../images/tiatia.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.3; /* 30% 透明度 */
+    z-index: -1; /* 確保背景在內容後面 */
+}
+
+/* Footer 樣式 */
+.footer {
+    flex-shrink: 0; /* 防止 footer 被壓縮 */
+    background-color: rgba(33, 37, 41, 0.8); /* 半透明深色背景 */
+    color: white;
+    padding: 20px 0;
+    width: 100%;
+    z-index: 100; /* 確保 footer 在最上層 */
+    margin-top: auto; /* 推到底部 */
 }
 
 .card {
     border-radius: 10px;
     overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.9); /* 稍微透明的卡片背景 */
 }
 
 .card-header {
@@ -75,7 +120,7 @@ body {
 }
 
 .user-section {
-    background-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.9); /* 稍微透明的背景 */
     border-radius: 10px;
     padding: 15px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);

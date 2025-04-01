@@ -42,7 +42,7 @@ $(document).ready(function() {
         
         // 發送API請求
         $.ajax({
-            url: "http://localhost:8000/api/extract-tags",
+            url: "/api/extract-tags",
             type: "POST",
             contentType: "application/json",
             headers: headers,
@@ -124,7 +124,7 @@ $(document).ready(function() {
         }
         
         $.ajax({
-            url: "http://localhost:8000/api/usage",
+            url: "/api/usage",
             type: "GET",
             headers: headers,
             success: function(response) {
@@ -238,7 +238,7 @@ function handleCredentialResponse(response) {
     
     // 驗證令牌
     $.ajax({
-        url: "http://localhost:8000/api/verify-google-token",
+        url: "/api/verify-google-token",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({

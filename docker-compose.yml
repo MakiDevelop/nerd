@@ -22,8 +22,10 @@ services:
     container_name: tag-extractor-frontend
     ports:
       - "80:80"
+      - "443:443"  # 添加 HTTPS 端口映射
     volumes:
       - ./frontend:/usr/share/nginx/html
+      - /etc/letsencrypt:/etc/letsencrypt  # 掛載 SSL 證書目錄
     depends_on:
       - backend
     restart: unless-stopped
