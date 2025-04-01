@@ -11,6 +11,8 @@ import time
 from fastapi.security import OAuth2PasswordBearer
 import redis
 import os
+# 導入無限制用戶清單
+from unlimited_users import UNLIMITED_USERS
 
 # 設置日誌
 logging.basicConfig(level=logging.INFO)
@@ -86,12 +88,14 @@ async def verify_google_token(token: str) -> dict:
 
 # 獲取用戶ID（從令牌或IP地址）
 async def get_user_id(authorization: Optional[str] = Header(None), request: Request = None):
+    email = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "")
         token_info = await verify_google_token(token)
         
         if token_info:
-            return f"user:{token_info.get('sub')}"  # 使用Google用戶ID
+            email = token_info.get('email')
+            return f"user:{token_info.get('sub')}", email  # 使用Google用戶ID
     
     # 如果沒有有效的令牌，使用IP地址
     # 優先使用 X-Forwarded-For 或 X-Real-IP 頭部獲取真實客戶端 IP
@@ -107,10 +111,15 @@ async def get_user_id(authorization: Optional[str] = Header(None), request: Requ
         client_ip = request.client.host
     
     logger.info(f"客戶端 IP: {client_ip}")
-    return f"anon:{client_ip}"
+    return f"anon:{client_ip}", None
 
 # 檢查使用次數限制
-async def check_usage_limit(user_id: str):
+async def check_usage_limit(user_id: str, email: str = None):
+    # 檢查是否為無限制用戶
+    if email and email in UNLIMITED_USERS:
+        logger.info(f"用戶 {email} 在無限制用戶清單中，不受使用限制")
+    return True
+
     today = datetime.now().strftime("%Y-%m-%d")
     key = f"usage:{user_id}:{today}"
     
@@ -127,8 +136,7 @@ async def check_usage_limit(user_id: str):
         return False
     
     return True
-
-# 增加使用次數
+                # 增加使用次數
 async def increment_usage(user_id: str):
     today = datetime.now().strftime("%Y-%m-%d")
     key = f"usage:{user_id}:{today}"
@@ -151,19 +159,20 @@ async def verify_token(request: GoogleTokenVerifyRequest):
             status_code=401,
             content={"message": "無效的令牌"}
         )
-    
+
     return {
         "user_id": token_info.get("sub"),
         "email": token_info.get("email"),
         "name": token_info.get("name"),
         "picture": token_info.get("picture")
     }
-
 @app.get("/api/usage")
-async def get_usage(request: Request, user_id: str = Depends(get_user_id)):
+async def get_usage(request: Request, authorization: Optional[str] = Header(None)):
     """
     獲取用戶使用次數
     """
+    user_id, email = await get_user_id(authorization=authorization, request=request)
+    
     today = datetime.now().strftime("%Y-%m-%d")
     key = f"usage:{user_id}:{today}"
     
@@ -173,25 +182,38 @@ async def get_usage(request: Request, user_id: str = Depends(get_user_id)):
     
     # 檢查是否已登入用戶
     is_logged_in = user_id.startswith("user:")
-    limit = LOGGED_IN_LIMIT if is_logged_in else ANONYMOUS_LIMIT
     
-    logger.info(f"用戶 {user_id} 的使用情況: {usage}/{limit}")
+    # 檢查是否為無限制用戶
+    is_unlimited = email and email in UNLIMITED_USERS
+    
+    limit = LOGGED_IN_LIMIT if is_logged_in else ANONYMOUS_LIMIT
+    remaining = max(0, limit - usage)
+    
+    if is_unlimited:
+        limit = float('inf')  # 無限制
+        remaining = float('inf')  # 無限制
+    
+    logger.info(f"用戶 {user_id} 的使用情況: {usage}/{limit if limit != float('inf') else '無限制'}")
     
     return {
         "usage": usage,
-        "limit": limit,
-        "remaining": max(0, limit - usage),
-        "is_logged_in": is_logged_in
+        "limit": "無限制" if is_unlimited else limit,
+        "remaining": "無限制" if is_unlimited else remaining,
+        "is_logged_in": is_logged_in,
+        "is_unlimited": is_unlimited
     }
 
 @app.post("/api/extract-tags")
-async def extract_tags(request: TagExtractRequest, req: Request, user_id: str = Depends(get_user_id)):
+async def extract_tags(request: TagExtractRequest, req: Request, authorization: Optional[str] = Header(None)):
     """
     從文本中萃取標籤
     """
     try:
+        # 獲取用戶ID和電子郵件
+        user_id, email = await get_user_id(authorization=authorization, request=req)
+        
         # 檢查使用次數限制
-        if not await check_usage_limit(user_id):
+        if not await check_usage_limit(user_id, email):
             return JSONResponse(
                 status_code=429,
                 content={
